@@ -1,5 +1,5 @@
-import Navbar from '../views/components/navbar/Navbar';
-import Footer from '../views/components/footer/Footer';
+import Navbar from '../components/navbar/Navbar';
+import Footer from '../components/footer/Footer';
 import '../index.css'; // Vamos manter seus estilos globais por enquanto
 
 export const metadata = {
