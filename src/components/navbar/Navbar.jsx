@@ -1,31 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation'; // NOVO: Importamos o hook de rotas
+import { usePathname } from 'next/navigation';
 
 const navLinks = [
-  { name: 'Home', path: '/' },
-  { name: 'About', path: '/about' },
-  { name: 'Projects', path: '/projects' },
-  { name: 'Contact', path: '/contacts' },
+  { name: 'Início', path: '/' },
+  { name: 'Sobre mim', path: '/about' },
+  { name: 'Projetos', path: '/projects' },
+  { name: 'Contato', path: '/contacts' },
 ];
 
 export default function Navbar() {
   const [hoveredLink, setHoveredLink] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [isHidden, setIsHidden] = useState(false); // NOVO: Controla se a navbar está escondida
 
-  const pathname = usePathname(); // NOVO: Armazena a rota atual (ex: '/' ou '/about')
+  const pathname = usePathname();
+  const { scrollY } = useScroll(); // NOVO: Monitora a posição do scroll
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setHasScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // NOVO: Lógica para esconder/mostrar a Navbar baseada na direção do scroll
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious();
+    
+    setHasScrolled(latest > 100);
+
+    // Só reage se o scroll for maior que 5 pixels de uma vez (ignora micro-tremores)
+    const isScrollingDown = latest > previous && latest - previous > 5;
+    const isScrollingUp = previous > latest && previous - latest > 5;
+
+    if (latest > 150 && isScrollingDown) {
+      setIsHidden(true);
+    } else if (isScrollingUp) {
+      setIsHidden(false);
+    }
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -53,10 +64,25 @@ export default function Navbar() {
     }
   };
 
+  const navbarVariants = {
+    hidden: { 
+      y: '-100%',
+      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } 
+    },
+    visible: { 
+      y: 0, 
+      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } 
+    }
+  };
+
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+      {/* Trocamos a tag <nav> normal por <motion.nav> */}
+      <motion.nav
+        variants={navbarVariants}
+        initial="hidden" // Começa escondida ao carregar a página
+        animate={isHidden ? "hidden" : "visible"} // Alterna baseado no scroll
+        className={`fixed top-0 left-0 w-full z-50 transition-colors duration-300 ${
           hasScrolled 
             ? 'bg-black/70 backdrop-blur-md border-b border-white/10' 
             : 'bg-transparent'
@@ -68,18 +94,17 @@ export default function Navbar() {
             <span className="text-white/50">[</span> dev <span className="text-white/50">]</span>
           </Link>
 
-          {/* Desktop Links */}
           <ul 
             className="hidden md:flex space-x-2"
-            onMouseLeave={() => setHoveredLink(null)} // NOVO: O MouseLeave agora fica no pai!
+            onMouseLeave={() => setHoveredLink(null)}
           >
             {navLinks.map((link, index) => {
-              const isActive = pathname === link.path; // NOVO: Variável semântica para saber se é o ativo
+              const isActive = pathname === link.path;
 
               return (
                 <li 
                   key={link.path}
-                  onMouseEnter={() => setHoveredLink(link.path)} // NOVO: O MouseEnter fica no item (li)
+                  onMouseEnter={() => setHoveredLink(link.path)}
                 >
                   <Link 
                     href={link.path}
@@ -87,7 +112,6 @@ export default function Navbar() {
                       isActive ? 'text-white' : 'text-white/70 hover:text-white'
                     }`}
                   >
-                    {/* Fundo Deslizante do Hover */}
                     {hoveredLink === link.path && (
                       <motion.div
                         layoutId="navPill"
@@ -96,7 +120,6 @@ export default function Navbar() {
                       />
                     )}
                     
-                    {/* NOVO: Indicador visual minimalista para o link ativo */}
                     {isActive && (
                       <motion.div
                         layoutId="activeIndicator"
@@ -115,7 +138,6 @@ export default function Navbar() {
             })}
           </ul>
 
-          {/* Mobile Menu Toggle */}
           <button 
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden z-50 relative p-2 text-white/70 hover:text-white flex flex-col gap-1.5"
@@ -135,9 +157,8 @@ export default function Navbar() {
             />
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -162,7 +183,6 @@ export default function Navbar() {
                     <Link 
                       href={link.path}
                       onClick={() => setIsOpen(false)}
-                      // NOVO: Cores do menu mobile baseadas no estado ativo
                       className={`text-4xl font-light transition-colors flex flex-col items-center gap-2 ${
                         isActive ? 'text-white' : 'text-white/70 hover:text-white'
                       }`}

@@ -12,7 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="flex flex-col min-h-screen antialiased">
         <Navbar />
-        <main className="flex-grow pt-28">
+        <main className="flex-grow">
           {children}
         </main>
         
