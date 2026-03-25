@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation'; // NOVO: Importamos o hook de rotas
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -12,10 +13,12 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const [hoveredLink, setHoveredLink] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
 
-  // Escuta o scroll para adicionar uma borda sutil quando o usuário descer a página
+  const pathname = usePathname(); // NOVO: Armazena a rota atual (ex: '/' ou '/about')
+
   useEffect(() => {
     const handleScroll = () => {
       setHasScrolled(window.scrollY > 20);
@@ -24,7 +27,6 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Controla o scroll do body quando o menu mobile está aberto
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -33,7 +35,6 @@ export default function Navbar() {
     }
   }, [isOpen]);
 
-  // Variáveis de animação do Framer Motion
   const menuVariants = {
     closed: { y: '-100%', opacity: 0 },
     open: { 
@@ -63,26 +64,55 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           
-          {/* Logo */}
           <Link href="/" className="text-xl font-bold tracking-tighter z-50 relative">
             <span className="text-white/50">[</span> dev <span className="text-white/50">]</span>
           </Link>
 
           {/* Desktop Links */}
-          <ul className="hidden md:flex space-x-8">
-            {navLinks.map((link, index) => (
-              <li key={link.path}>
-                <Link 
-                  href={link.path}
-                  className="text-sm font-medium text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+          <ul 
+            className="hidden md:flex space-x-2"
+            onMouseLeave={() => setHoveredLink(null)} // NOVO: O MouseLeave agora fica no pai!
+          >
+            {navLinks.map((link, index) => {
+              const isActive = pathname === link.path; // NOVO: Variável semântica para saber se é o ativo
+
+              return (
+                <li 
+                  key={link.path}
+                  onMouseEnter={() => setHoveredLink(link.path)} // NOVO: O MouseEnter fica no item (li)
                 >
-                  <span className="text-xs text-white/30 group-hover:text-white/50 transition-colors">
-                    0{index + 1}
-                  </span>
-                  {link.name}
-                </Link>
-              </li>
-            ))}
+                  <Link 
+                    href={link.path}
+                    className={`relative px-5 py-2 text-sm font-medium transition-colors flex items-center gap-2 group ${
+                      isActive ? 'text-white' : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    {/* Fundo Deslizante do Hover */}
+                    {hoveredLink === link.path && (
+                      <motion.div
+                        layoutId="navPill"
+                        className="absolute inset-0 bg-white/10 rounded-full z-[-1]"
+                        transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    {/* NOVO: Indicador visual minimalista para o link ativo */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeIndicator"
+                        className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"
+                        transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+
+                    <span className={`text-xs transition-colors ${isActive ? 'text-white/50' : 'text-white/30 group-hover:text-white/50'}`}>
+                      0{index + 1}
+                    </span>
+                    <span className="relative z-10">{link.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
 
           {/* Mobile Menu Toggle */}
@@ -118,25 +148,31 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-black flex flex-col items-center justify-center"
           >
             <ul className="flex flex-col space-y-8 text-center">
-              {navLinks.map((link, index) => (
-                <motion.li 
-                  key={link.path}
-                  variants={linkVariants}
-                  initial="closed"
-                  animate="open"
-                  // Stagger effect: cada link entra com um pequeno atraso baseado no seu index
-                  transition={{ delay: 0.1 * index }} 
-                >
-                  <Link 
-                    href={link.path}
-                    onClick={() => setIsOpen(false)}
-                    className="text-4xl font-light text-white/70 hover:text-white transition-colors flex flex-col items-center gap-2"
+              {navLinks.map((link, index) => {
+                const isActive = pathname === link.path;
+                
+                return (
+                  <motion.li 
+                    key={link.path}
+                    variants={linkVariants}
+                    initial="closed"
+                    animate="open"
+                    transition={{ delay: 0.1 * index }} 
                   >
-                    <span className="text-sm text-white/30 font-mono">0{index + 1}</span>
-                    {link.name}
-                  </Link>
-                </motion.li>
-              ))}
+                    <Link 
+                      href={link.path}
+                      onClick={() => setIsOpen(false)}
+                      // NOVO: Cores do menu mobile baseadas no estado ativo
+                      className={`text-4xl font-light transition-colors flex flex-col items-center gap-2 ${
+                        isActive ? 'text-white' : 'text-white/70 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-sm text-white/30 font-mono">0{index + 1}</span>
+                      {link.name}
+                    </Link>
+                  </motion.li>
+                );
+              })}
             </ul>
           </motion.div>
         )}

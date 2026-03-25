@@ -1,6 +1,6 @@
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
-import '../index.css'; // Vamos manter seus estilos globais por enquanto
+import '../index.css';
 
 export const metadata = {
   title: 'Portfolio | Dev',
@@ -10,9 +10,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className="flex flex-col min-h-screen antialiased">
         <Navbar />
-        <main>{children}</main>
+        <main className="flex-grow pt-28">
+          {children}
+        </main>
+        
         <Footer />
       </body>
     </html>
